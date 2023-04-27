@@ -27,6 +27,11 @@ HUCs08 <- c('0801*','0802*','0803*','0804*','0805*','0806*','0807*','0808*','080
 HUCs10 <- c('1002*','1003*','1004*','1005*','1006*','1007*','1008*','1009*','1010*','1011*','1012*','1013*','1014*','1015*','1016*','1017*','1018*','1019*','1020*','1021*','1022*','1023*','1024*','1025*','1026*','1027*','1028*','1029*','1030*')
 HUCs11 <- c('1101*','1102*','1103*','1104*','1105*','1106*','1107*','1108*','1109*','1110*','1111*','1112*','1113*','1114*')
 
+HUCs <- list(HUCs05, HUCs06, HUCs07, HUCs08, HUCs09, HUCs10, HUCs11,
+             HUCs12, HUCs13, HUCs14, HUCs15, HUCs16, HUCs17, HUCs18, HUCs19, HUCs20, HUCs21)
+
+hucName = HUCs21
+hucNameStr = 'HUC21'
 
 #Define function to pull WQP data by sites (sorted by HUC)
 extract_WQP_data = function(HUC) {
@@ -60,9 +65,9 @@ extract_WQP_data = function(HUC) {
     #Extract site data by HUC with selected columns
     data_resultFiltered <- whatWQPdata(huc = HUC,
                                        siteType = "Stream",
-                                       characteristicName = SNiP_Forms,
+                                       characteristicName = S_Forms,
                                        startDate="1984-01-01",
-                                       endDate="2021-10-01") %>%
+                                       endDate="2023-03-01") %>%
       dplyr::select(MonitoringLocationIdentifier, resultCount, siteUrl, StateName, CountyName)
     #Filter data by number of results per site
     data_filtered <- data_resultFiltered %>% 
@@ -72,17 +77,17 @@ extract_WQP_data = function(HUC) {
     
     data_sites <- whatWQPsites(siteNumbers = sites,
                                siteType = "Stream",
-                               characteristicName = SNiP_Forms,
+                               characteristicName = S_Forms,
                                startDate="1984-01-01",
-                               endDate="2021-10-01") %>%
+                               endDate="2023-03-01") %>%
       dplyr::select(MonitoringLocationIdentifier, HUCEightDigitCode, DrainageAreaMeasure.MeasureValue, DrainageAreaMeasure.MeasureUnitCode, ContributingDrainageAreaMeasure.MeasureValue, ContributingDrainageAreaMeasure.MeasureUnitCode, VerticalMeasure.MeasureValue, VerticalMeasure.MeasureUnitCode, VerticalAccuracyMeasure.MeasureValue, VerticalAccuracyMeasure.MeasureUnitCode, VerticalCollectionMethodName, LatitudeMeasure, LongitudeMeasure, HorizontalCoordinateReferenceSystemDatumName)
     
     #Call actual data by filtered sites
     data_retrieval <- readWQPdata(siteNumbers = sites,
                                   siteType = "Stream",
-                                  characteristicName = SNiP_Forms,
+                                  characteristicName = S_Forms,
                                   startDate="1984-01-01", 
-                                  endDate="2021-10-01",
+                                  endDate="2023-03-01",
                                   tz = 'UTC')%>%
       dplyr::select(OrganizationIdentifier, OrganizationFormalName, ActivityDepthHeightMeasure.MeasureValue, ActivityDepthHeightMeasure.MeasureUnitCode, ActivityIdentifier, ActivityMediaName, ActivityStartDate, ActivityStartDateTime, ActivityStartTime.Time, ActivityStartTime.TimeZoneCode, MonitoringLocationIdentifier, HydrologicCondition, HydrologicEvent, CharacteristicName, ResultAnalyticalMethod.MethodName, ResultParticleSizeBasisText, ResultSampleFractionText, ResultMeasureValue, ResultMeasure.MeasureUnitCode, ResultParticleSizeBasisText, ResultSampleFractionText, ResultStatusIdentifier, SampleCollectionMethod.MethodName, USGSPCode)%>%
       dplyr::filter(!is.na(ResultMeasureValue))%>%
@@ -122,23 +127,24 @@ extract_WQP_data = function(HUC) {
   return(out) 
 }
 
+
 #Loop over each HUC sub basin
-WQPdata_list = lapply(HUCs21, extract_WQP_data)
+WQPdata_list = lapply(hucName, extract_WQP_data)
 
 #Create a dataframe and weed out null locations or sub-basins
 WQPdata_frame <- as.data.frame(do.call(rbind, WQPdata_list)) %>%
   dplyr::filter(!is.na(MonitoringLocationIdentifier))
 
+setwd('~/Documents/SNiP/WQP_data')
+
 #Save as RDS to cluster
-WQPdata <- saveRDS(WQPdata_frame, file = "/Users/Ellie/Documents/UMass/SNiP/WQPdataraw_SNiP_HUC21_2.rds")
-
-
+WQPdata <- saveRDS(WQPdata_frame, file = paste0("WQPdataraw_Sed_", hucNameStr,".rds"))
 
 
 # #Create parallel workflow in the cluster with correct # of nodes specified
 # cl=makeCluster(2)
 # 
-# WQPdata_list=parLapply(cl=cl, HUCs02, extract_WQP_data) #Loop over the HUCs of interest to create a list
+# WQPdata_list=parLapply(cl=cl, HUCs05, extract_WQP_data) #Loop over the HUCs of interest to create a list
 # #WQPdata_frame <- bind_rows(WQPdata_list) #Transform to df
 # 
 # #If multiple data types, try this instead:
@@ -146,7 +152,7 @@ WQPdata <- saveRDS(WQPdata_frame, file = "/Users/Ellie/Documents/UMass/SNiP/WQPd
 #   dplyr::filter(!is.na(MonitoringLocationIdentifier))
 # 
 # #Save to cluster
-# WQPdata <- saveRDS(WQPdata_frame, file = "/Users/Ellie/Documents/UMass/SNiP/WQPdata_SNiP_HUC02.rds")
+# WQPdata <- saveRDS(WQPdata_frame, file = "/Users/Ellie/Documents/UMass/SNiP/WQPdata_SNiP_HUC10.rds")
 # stopCluster(cl)
 # 
 
